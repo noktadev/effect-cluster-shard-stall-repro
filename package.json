@@ -5,14 +5,22 @@
   "scripts": {
     "start": "bun run src/runner.ts",
     "start:two": "concurrently 'PORT=34431 bun run src/runner.ts' 'PORT=34432 bun run src/runner.ts'",
+    "start:http-buggy": "concurrently 'HOST=localhost PORT=34431 bun run src/runner-http-buggy.ts' 'HOST=localhost PORT=34432 bun run src/runner-http-buggy.ts'",
+    "start:http-patched": "concurrently 'HOST=localhost PORT=34431 bun run src/runner-http-patched.ts' 'HOST=localhost PORT=34432 bun run src/runner-http-patched.ts'",
+    "start:probe": "bun run src/probe.ts",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down -v",
-    "db:clean": "docker compose exec postgres psql -U postgres -d cluster_test -c 'TRUNCATE cluster_runners, cluster_messages, cluster_replies, cluster_locks;'"
+    "db:clean": "docker compose exec postgres psql -U postgres -d cluster_test -c 'TRUNCATE cluster_runners, cluster_messages, cluster_replies, cluster_locks;'",
+    "k3d:create": "k3d cluster create effect-cluster --config k3d-config.yaml",
+    "k3d:delete": "k3d cluster delete effect-cluster",
+    "k3d:deploy": "kubectl apply -f k8s/",
+    "k3d:logs": "kubectl logs -l app=runner -f --tail=50 -n cluster-repro"
   },
   "dependencies": {
     "@effect/cluster": "0.56.1",
     "@effect/platform": "0.94.2",
     "@effect/platform-bun": "0.87.1",
+    "@effect/rpc": "0.73.0",
     "@effect/sql": "0.49.0",
     "@effect/sql-pg": "0.50.1",
     "effect": "3.19.15"

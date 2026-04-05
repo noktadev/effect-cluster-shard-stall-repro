@@ -1,0 +1,28 @@
+# k3d configuration for reproducing @effect/cluster HttpRunner route mismatch.
+#
+# The bug manifests when runners communicate over HTTP in a multi-pod K8s
+# environment. Inter-runner RPC hits POST / which returns 404 because routes
+# are registered on the wrong HttpRouter service.
+#
+# Usage:
+#   k3d cluster create effect-cluster --config k3d-config.yaml
+#   k3d cluster delete effect-cluster
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: effect-cluster
+servers: 1
+agents: 0
+ports:
+  - port: 25432:5432
+    nodeFilters:
+      - loadbalancer
+options:
+  k3d:
+    wait: true
+    timeout: "60s"
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*

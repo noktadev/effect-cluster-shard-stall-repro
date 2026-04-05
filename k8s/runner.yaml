@@ -1,0 +1,59 @@
+# Two runner pods that must communicate via HTTP RPC.
+# The bug: POST / between runners returns 404 because routes are on the wrong router.
+#
+# To build and load the runner image into k3d:
+#   docker build -t effect-cluster-runner:local .
+#   k3d image import effect-cluster-runner:local -c effect-cluster
+#   kubectl apply -f k8s/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runner
+  namespace: cluster-repro
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: runner
+  template:
+    metadata:
+      labels:
+        app: runner
+    spec:
+      containers:
+        - name: runner
+          image: effect-cluster-runner:local
+          ports:
+            - containerPort: 34431
+              name: cluster
+          env:
+            - name: PORT
+              value: "34431"
+            - name: HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: DATABASE_URL
+              value: "postgres://postgres:postgres@postgres:5432/cluster_test"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+# Headless service so runners can discover each other by pod IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: runner
+  namespace: cluster-repro
+spec:
+  clusterIP: None
+  selector:
+    app: runner
+  ports:
+    - port: 34431
+      targetPort: 34431
+      name: cluster
